@@ -71,3 +71,126 @@ kind create cluster --name my-cluster --image=kindest/node:v1.21.1
 kubectl cluster-info --context kind-my-cluster
 kubectl get pods
 kubectl get nodes
+
+
+
+Production-Grade Kubernetes Cluster: kubeadm
+The kubeadm toolbox acts as a bootstrap for creating a production-grade Kubernetes cluster, making a single master node with an etcd configuration. Here, Docker is the cluster’s container runtime, and you can refer to our  Docker installation steps above.
+
+Assuming you’ve successfully installed Docker, let’s build the cluster using the kubeadm toolbox.
+
+Add the Kubernetes repo GPG key into the key manager:
+
+# curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+
+Add the Kubernetes repo details to the repository source list:
+
+# echo “deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main” | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+Here, the installation comes in three pieces: kubelet, kubeadm, and kubectl. Let’s update the repository and start the installation:
+
+# apt update -y
+
+# apt-get install -y kubelet kubeadm kubectl
+
+To hold the installed packages with current versions, use the command below. These packages cannot be upgraded or removed until the hold mark is removed.
+
+# apt-mark hold kubelet kubeadm kubectl
+
+Enable the process to start on boot and reload the kubelet daemon. Check the current status of the daemon:
+
+# systemctl enable kubelet
+
+# systemctl daemon-reload
+
+# systemctl restart kubelet.service
+
+kubeadm installation is now complete. Let’s create the new cluster using kubeadm init:
+
+# kubeadm init
+
+[init] Using Kubernetes version: v1.23.1
+
+[preflight] Running pre-flight checks
+
+[preflight] Pulling images required for setting up a Kubernetes cluster
+
+…
+
+… output truncated …
+
+…
+
+[addons] Applied essential addon: CoreDNS
+
+[addons] Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+# mkdir -p $HOME/.kube
+
+# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+# export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+
+Run “kubectl apply -f [podnetwork].yaml”  
+
+We often use Calico as the cluster’s network provider, as shown here:
+
+# kubectl create -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
+
+configmap/calico-config
+
+…
+
+… output truncated …
+
+…
+
+createdclusterrole.rbac.authorization.k8s.io/calico-kube-controllers createdclusterrolebinding.rbac.authorization.k8s.io/calico-kube-controllers
+
+createdserviceaccount/calico-kube-controllers created
+
+Now, we can join many worker nodes by running the following join command on each worker node as root:
+
+# kubeadm join 10.190.0.2:6443 –token ls7ryl.mlrc2oaoob15gbog –discovery-token-ca-cert-hash sha256:13aa6e021229373bfdceb8537ab50056c7fb6b4b67435ad165ceb1b5131c9dfc
+
+[preflight] Running pre-flight checks
+
+[preflight] Reading configuration from the cluster…
+
+…
+
+… output truncated …
+
+…
+
+[kubelet-start] Starting the kubelet
+
+[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap…
+
+This node has joined the cluster:
+
+* Certificate signing request was sent to apiserver and a response was received.
+
+* The Kubelet was informed of the new secure connection details.
+
+Let’s execute the below command to check the node joining status on the cluster:
+
+# kubectl get nodes
+
+NAME            STATUS     ROLES                 AGE   VERSION
+
+iod-master      Ready      control-plane,master   44h   v1.23.1
+
+iod-worker-2   NotReady   <none>                 32h   v1.23.1
+
+iod-worker-3   Ready       <none>                32s   v1.23.1
