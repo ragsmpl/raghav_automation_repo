@@ -50,3 +50,24 @@ Ingress Controller: Manages external access to services in a cluster, typically 
 Networking:
 
 Pod Network: A network overlay that enables communication between pods across nodes in the cluster. Common pod networking solutions include Calico, Flannel, and Cilium.
+
+
+Deploy K8S in MAC:
+curl -LO "
+https://dl.k8s.io/release/$(curl
+-L -s
+https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | shasum -a 256 --check
+chmod +x ./kubectl
+sudo mv ./kubectl /usr/local/bin/kubectl\nsudo chown root: /usr/local/bin/kubectl
+kubectl version --client
+GO111MODULE="on" go install sigs.k8s.io/kind@v0.11.1\n
+kind create cluster --name my-cluster --image=kindest/node:v1.21.1 --container-runtime=podman
+sudo mv kind-linux-amd64 /usr/local/bin/kind
+sudo mv kind /usr/local/bin/kind
+kind create cluster --name my-cluster --image=kindest/node:v1.21.1 --container-runtime=podman
+kind create cluster --help
+kind create cluster --name my-cluster --image=kindest/node:v1.21.1
+kubectl cluster-info --context kind-my-cluster
+kubectl get pods
+kubectl get nodes
